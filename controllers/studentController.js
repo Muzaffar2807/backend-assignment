@@ -1,89 +1,89 @@
 const asyncHandler = require("express-async-handler");
-const Contact = require("../models/studentModel");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const User = require("../models/userModal");
 
-//@desc GET all contacts
-//@route GET /api/contacts
+//@desc Register a student
+//@route POST /api/students/register
 //@access public
-const getContacts = asyncHandler(async (req, res) => {
-  const contacts = await Contact.find();
-  res.status(200).json(contacts);
-});
+const registerUser = asyncHandler(async (req, res) => {
+  const { username, email, password } = req.body;
 
-//@desc POST   contacts
-//@route POST /api/contacts
-//@access public
-const createContact = asyncHandler(async (req, res) => {
-  console.log(req.body);
-  const { name, email, phone } = req.body;
-
-  if (!name || !email || !phone) {
+  if (!username || !email || !password) {
     res.status(400);
-    throw new Error("All fields are manadatory!");
+    throw new Error(" All fields are mandatory");
   }
 
-  const contact = await Contact.create({
-    name,
+  const userAvailable = await User.findOne({ email });
+
+  if (userAvailable) {
+    res.status(400);
+    throw new Error("User already register");
+  }
+
+  //Hash password
+  const hashedPassword = await bcrypt.hash(password, 10);
+  //console.log(hashedPassword)
+  const user = await User.create({
+    username,
     email,
-    phone,
+    password: hashedPassword,
   });
 
-  res.status(201).json(contact);
-});
+  console.log(user);
 
-//@desc GET   contact
-//@route GET /api/contacts/:id
-//@access public
-const getContactID = asyncHandler(async (req, res) => {
-  const contact = await Contact.findById(req.params.id);
-
-  if (!contact) {
-    res.status(404);
-    throw new Error("Contact Not found");
+  if (user) {
+    res.status(201).json({ _id: user.id, email: user.email });
+  } else {
+    res.status(400);
+    throw new Error("User data is not Valid");
   }
 
-  res.status(200).json(contact);
+  res.json({ message: "Register the user" });
 });
 
-//@desc PUT   contact
-//@route PUT /api/contacts/:id
-//@access public
-const updateContact = asyncHandler(async (req, res) => {
-  const contact = await Contact.findById(req.params.id);
+//@desc Login a student
+//@route POST /api/students/login
+//@access private
+const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
-  if (!contact) {
-    res.status(404);
-    throw new Error("Contact Not found");
+  if (!email || !password) {
+    res.status(400);
+    throw new Error("All fields Mandatory");
   }
 
-  const updatedContact = await Contact.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    { new: true }
-  );
+  const user = await User.findOne({ email });
 
-  res.status(200).json(updatedContact);
-});
+  //compare password
 
-//@desc DELETE   contact
-//@route DELETE /api/contacts/:id
-//@access public
-const deleteContact = asyncHandler(async (req, res) => {
-  const contact = await Contact.findById(req.params.id);
+  if (user && (await bcrypt.compare(password, user.password))) {
+    const accessToken = jwt.sign(
+      {
+        user: {
+          username: user.username,
+          email: user.email,
+          id: user.id,
+        },
+      },
+      process.env.ACCESS_TOKEN_SECERT,
+      { expiresIn: "30m" }
+    );
 
-  if (!contact) {
-    res.status(404);
-    throw new Error("Contact Not found");
+    //Set the authorization header with the bearer token
+    // res.setHeader("Authorization", `Bearer ${accessToken}`);
+
+    res.status(200).json({ accessToken });
+  } else {
+    res.status(401);
+    throw new Error("Email or Password Invalid");
   }
-
-  await Contact.findByIdAndRemove(req.params.id);
-
-  res.status(200).json(contact);
+});
+//@desc Current user info
+//@route POST /api/users/current
+//@access private
+const currentUser = asyncHandler(async (req, res) => {
+  res.json(req.user);
 });
 
-module.exports = {
-  getContacts,
-  createContact,
-  getContactID,
-  updateContact,
-  deleteContact,
-};
+module.exports = { registerUser, loginUser, currentUser };

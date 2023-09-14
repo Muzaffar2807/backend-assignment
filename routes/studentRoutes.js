@@ -1,13 +1,17 @@
 const express = require("express");
+const { registerUser, loginUser, currentUser } = require("../controllers/studentController");
+const {
+  validateTokenMiddleware,
+} = require("../middleware/validateTokenHandler");
+ 
+
 
 const router = express.Router();
 
-router.post("/register", (req, res) => {
-    res.json({ message: "Register the user"})
-})
+router.post("/register", registerUser);
 
-router.post("/login", (req, res) => {
-  res.json({ message: "Login the user" });
-});
+router.post("/login", loginUser);
+
+router.get("/current",validateTokenMiddleware, currentUser)
 
 module.exports = router;

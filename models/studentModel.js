@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 
 const studentSchema = mongoose.Schema(
   {
+    user_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true, 
+    },
     name: {
       type: String,
       require: [true, "Please add the Student name"],
