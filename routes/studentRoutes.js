@@ -1,5 +1,12 @@
 const express = require("express");
-const { registerUser, loginUser, currentUser } = require("../controllers/studentController");
+const {
+  registerStudent,
+  loginStudent,
+  currentStudent,
+  getDeanSessions,
+  bookDeanSession,
+} = require("../controllers/studentController");
+
 const {
   validateTokenMiddleware,
 } = require("../middleware/validateTokenHandler");
@@ -8,10 +15,13 @@ const {
 
 const router = express.Router();
 
-router.post("/register", registerUser);
+router.post("/register", registerStudent);
 
-router.post("/login", loginUser);
+router.post("/login", loginStudent);
 
-router.get("/current",validateTokenMiddleware, currentUser)
+router.get("/current", validateTokenMiddleware, currentStudent);
+router.get("/dean-sessions", getDeanSessions);
+router.post("/book-dean-session", bookDeanSession);
+
 
 module.exports = router;

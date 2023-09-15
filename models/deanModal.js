@@ -1,14 +1,14 @@
 const mongoose = require("mongoose");
 
-const studentSchema = mongoose.Schema(
+const deanSchema = mongoose.Schema(
   {
-    student_name: {
+    dean_name: {
       type: String,
-      require: [true, "Please add the Student name"],
+      require: [true, "Please add the Dean name"],
     },
     university_id: {
       type: String,
-      require: [true, "Please add the Student name"],
+      require: [true, "Please add the Dean ID"],
     },
     password: {
       type: String,
@@ -21,4 +21,4 @@ const studentSchema = mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Student", studentSchema);
+module.exports = mongoose.model("Dean", deanSchema);

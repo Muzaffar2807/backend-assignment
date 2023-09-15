@@ -1,59 +1,56 @@
 const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const User = require("../models/userModal");
+const Student = require("../models/studentModel");
 
-//@desc Register a student
-//@route POST /api/students/register
-//@access public
-const registerUser = asyncHandler(async (req, res) => {
-  const { username, email, password } = req.body;
+ 
+const registerStudent = asyncHandler(async (req, res) => {
+  const { university_id, student_name, password } = req.body;
 
-  if (!username || !email || !password) {
+  if (!university_id || !student_name || !password) {
     res.status(400);
     throw new Error(" All fields are mandatory");
   }
 
-  const userAvailable = await User.findOne({ email });
+  const userAvailable = await Student.findOne({ university_id });
 
   if (userAvailable) {
     res.status(400);
-    throw new Error("User already register");
+    throw new Error("Student already register");
   }
 
   //Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
   //console.log(hashedPassword)
-  const user = await User.create({
-    username,
-    email,
+  const user = await Student.create({
+    student_name,
+    university_id,
     password: hashedPassword,
   });
 
   console.log(user);
 
   if (user) {
-    res.status(201).json({ _id: user.id, email: user.email });
+    res.status(201).json({
+      _id: user.id,
+      student_name: user.student_name,
+      university_id: user.university_id,
+    });
   } else {
     res.status(400);
     throw new Error("User data is not Valid");
   }
-
-  res.json({ message: "Register the user" });
 });
+ 
+const loginStudent = asyncHandler(async (req, res) => {
+  const { university_id, password } = req.body;
 
-//@desc Login a student
-//@route POST /api/students/login
-//@access private
-const loginUser = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
+  if (!university_id || !password) {
     res.status(400);
     throw new Error("All fields Mandatory");
   }
 
-  const user = await User.findOne({ email });
+  const user = await Student.findOne({ university_id });
 
   //compare password
 
@@ -61,7 +58,7 @@ const loginUser = asyncHandler(async (req, res) => {
     const accessToken = jwt.sign(
       {
         user: {
-          username: user.username,
+          university_id: user.university_id,
           email: user.email,
           id: user.id,
         },
@@ -69,21 +66,75 @@ const loginUser = asyncHandler(async (req, res) => {
       process.env.ACCESS_TOKEN_SECERT,
       { expiresIn: "30m" }
     );
-
+    // save user token
+    user.token = accessToken;
     //Set the authorization header with the bearer token
-    // res.setHeader("Authorization", `Bearer ${accessToken}`);
+    res.setHeader("Authorization", `Bearer ${accessToken}`);
 
-    res.status(200).json({ accessToken });
+    res
+      .status(200)
+      .json({ message: "successfully loged In!", student: user });
   } else {
     res.status(401);
-    throw new Error("Email or Password Invalid");
+    throw new Error("ID or Password Invalid");
   }
 });
-//@desc Current user info
-//@route POST /api/users/current
-//@access private
-const currentUser = asyncHandler(async (req, res) => {
+ 
+const currentStudent = asyncHandler(async (req, res) => {
   res.json(req.user);
+}); 
+
+const getDeanSessions = asyncHandler(async (req, res) => {
+  const deanSessions = generateDeanSessions();
+
+  res.status(200).json({ deanSessions });
 });
 
-module.exports = { registerUser, loginUser, currentUser };
+// Function to generate dean sessions
+const generateDeanSessions = () => {
+  const deanSessions = [];
+  const daysOfWeek = ["Thursday", "Friday"];
+  const startTime = "10:00 AM";
+  const endTime = "11:00 AM";
+
+  for (const day of daysOfWeek) {
+    const session = {
+      day,
+      timeSlot: `${day}, ${startTime} - ${endTime}`,
+    };
+
+    deanSessions.push(session);
+  }
+
+  return deanSessions;
+};
+
+const bookDeanSession = asyncHandler(async (req, res) => {
+  const { selectedSession, university_id } = req.body; // Assuming you have the student's ID in the request body
+
+  // Find the student using the provided studentId
+  const student = await Student.findById(university_id);
+
+  if (!student) {
+    res.status(404).json({ message: "Student not found" });
+    return;
+  }
+
+  // Implement logic to book the selected dean session.
+  // You can update the student's document to include the booked session information.
+
+  // For example, you can add a field 'bookedSession' to the student schema and update it.
+   
+
+  res.status(200).json({ message: "Dean session booked successfully" });
+});
+
+
+
+module.exports = {
+  registerStudent,
+  loginStudent,
+  currentStudent,
+  getDeanSessions,
+  bookDeanSession,
+};
