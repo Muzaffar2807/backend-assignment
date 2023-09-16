@@ -1,7 +1,9 @@
 const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const Dean = require("../models/deanModal");
+const Dean = require("../modals/deanModal");
+const Student = require("../modals/studentModel");
+const DeanSession = require("../modals/deanSessionModal");
 
 const registerDean = asyncHandler(async (req, res) => {
   try {
@@ -42,7 +44,6 @@ const registerDean = asyncHandler(async (req, res) => {
   }
 });
 
-
 const loginDean = asyncHandler(async (req, res) => {
   const { university_id, password } = req.body;
 
@@ -79,7 +80,41 @@ const loginDean = asyncHandler(async (req, res) => {
   }
 });
 
+// Add this API endpoint to your deanController.js file
+const getPendingDeanSessions = asyncHandler(async (req, res) => {
+  const { university_id } = req.body;
+
+  try {
+    const pendingSessions = await DeanSession.find({
+      status: "booked",
+    });
+
+    console.log("University ID:", university_id);
+
+    const sessionDetails = await Promise.all(
+      pendingSessions.map(async (session) => {
+        const student = await Student.findOne({
+          university_id: session.booked_by,
+        });
+        return {
+          student_name: student ? student.student_name : "Student Not Found",
+          session_slot: session.slot,
+          session_day: session.day,
+        };
+      })
+    );
+
+    console.log(sessionDetails);
+
+    res.status(200).json(sessionDetails);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 module.exports = {
   registerDean,
   loginDean,
+  getPendingDeanSessions,
 };

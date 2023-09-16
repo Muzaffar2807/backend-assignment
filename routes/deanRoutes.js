@@ -1,7 +1,8 @@
 const express = require("express");
-const { 
+const {
   registerDean,
-  loginDean
+  loginDean,
+  getPendingDeanSessions,
 } = require("../controllers/deanController");
 
 const router = express.Router();
@@ -10,6 +11,8 @@ const router = express.Router();
 router.post("/register", registerDean);
 
 router.post("/login", loginDean);
+
+router.get("/pending-sessions", getPendingDeanSessions)
  
  
  

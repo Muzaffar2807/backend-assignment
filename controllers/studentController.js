@@ -1,9 +1,9 @@
 const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const Student = require("../models/studentModel");
+const Student = require("../modals/studentModel");
+const DeanSession = require("../modals/deanSessionModal");
 
- 
 const registerStudent = asyncHandler(async (req, res) => {
   const { university_id, student_name, password } = req.body;
 
@@ -41,7 +41,7 @@ const registerStudent = asyncHandler(async (req, res) => {
     throw new Error("User data is not Valid");
   }
 });
- 
+
 const loginStudent = asyncHandler(async (req, res) => {
   const { university_id, password } = req.body;
 
@@ -71,70 +71,62 @@ const loginStudent = asyncHandler(async (req, res) => {
     //Set the authorization header with the bearer token
     res.setHeader("Authorization", `Bearer ${accessToken}`);
 
-    res
-      .status(200)
-      .json({ message: "successfully loged In!", student: user });
+    res.status(200).json({ message: "successfully loged In!", student: user });
   } else {
     res.status(401);
     throw new Error("ID or Password Invalid");
   }
 });
- 
+
 const currentStudent = asyncHandler(async (req, res) => {
   res.json(req.user);
-}); 
+});
+ 
+const getAvailableDeanSessions = asyncHandler(async (req, res) => {
+  try {
+    // Fetch all available dean sessions
+    const availableSessions = await DeanSession.find({ status: "available" });
 
-const getDeanSessions = asyncHandler(async (req, res) => {
-  const deanSessions = generateDeanSessions();
-
-  res.status(200).json({ deanSessions });
+    res.status(200).json(availableSessions);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
-// Function to generate dean sessions
-const generateDeanSessions = () => {
-  const deanSessions = [];
-  const daysOfWeek = ["Thursday", "Friday"];
-  const startTime = "10:00 AM";
-  const endTime = "11:00 AM";
 
-  for (const day of daysOfWeek) {
-    const session = {
-      day,
-      timeSlot: `${day}, ${startTime} - ${endTime}`,
-    };
-
-    deanSessions.push(session);
-  }
-
-  return deanSessions;
-};
-
+ 
 const bookDeanSession = asyncHandler(async (req, res) => {
-  const { selectedSession, university_id } = req.body; // Assuming you have the student's ID in the request body
+  const { session_id, university_id } = req.body;
 
-  // Find the student using the provided studentId
-  const student = await Student.findById(university_id);
+  try { 
+    const session = await DeanSession.findById(session_id);
 
-  if (!student) {
-    res.status(404).json({ message: "Student not found" });
-    return;
+    if (!session) {
+      res.status(404).json({ message: "Session not found" });
+      return;
+    } 
+    if (session.status !== "available") {
+      res.status(400).json({ message: "Session is not available for booking" });
+      return;
+    } 
+    session.status = "booked";
+    session.booked_by = university_id;
+ 
+    await session.save();
+
+    res.status(200).json({ message: "Dean session booked successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
-
-  // Implement logic to book the selected dean session.
-  // You can update the student's document to include the booked session information.
-
-  // For example, you can add a field 'bookedSession' to the student schema and update it.
-   
-
-  res.status(200).json({ message: "Dean session booked successfully" });
 });
-
 
 
 module.exports = {
   registerStudent,
   loginStudent,
   currentStudent,
-  getDeanSessions,
+  getAvailableDeanSessions,
   bookDeanSession,
 };

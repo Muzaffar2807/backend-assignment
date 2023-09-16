@@ -3,7 +3,7 @@ const {
   registerStudent,
   loginStudent,
   currentStudent,
-  getDeanSessions,
+  getAvailableDeanSessions,
   bookDeanSession,
 } = require("../controllers/studentController");
 
@@ -20,7 +20,7 @@ router.post("/register", registerStudent);
 router.post("/login", loginStudent);
 
 router.get("/current", validateTokenMiddleware, currentStudent);
-router.get("/dean-sessions", getDeanSessions);
+router.get("/dean-sessions", getAvailableDeanSessions);
 router.post("/book-dean-session", bookDeanSession);
 
 
