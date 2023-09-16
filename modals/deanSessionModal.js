@@ -1,20 +1,21 @@
 const mongoose = require("mongoose");
+ 
 
 const DeanSessionSchema = mongoose.Schema({
   slot: {
     type: Number,
-    //required: true,
-    enum: [1, 2], // Only allow values 1 or 2
+     required: true,
+    enum: [1, 2], 
   },
   day: {
     type: String,
-   // required: true,
-    enum: ["THURSDAY", "FRIDAY"], // Only allow THURSDAY or FRIDAY
+    required: true,
+    enum: ["THURSDAY", "FRIDAY"],  
   },
   status: {
     type: String,
-    //required: true,
-    enum: ["available", "booked"], // Example values, adjust as needed
+    required: true,
+    enum: ["available", "booked"], 
   },
   booked_by: {
     type: String,
@@ -30,10 +31,9 @@ const DeanSessionSchema = mongoose.Schema({
     required: false,
   },
 });
-
-// Middleware to set the end_date to 1 hour after bookingDate
+ 
 DeanSessionSchema.pre("save", function (next) {
-  this.end_time = new Date(this.start_time.getTime() + 60 * 60 * 1000); // Adding 1 hour in milliseconds
+  this.end_time = new Date(this.start_time.getTime() + 60 * 60 * 100);  
   next();
 });
 
