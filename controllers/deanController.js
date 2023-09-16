@@ -92,7 +92,7 @@ const loginDean = asyncHandler(async (req, res) => {
   }
 });
 
-  const getPendingDeanSessions = asyncHandler(async (req, res) => {
+/*  const getPendingDeanSessions = asyncHandler(async (req, res) => {
   const { university_id } = req.body; 
 
   try {
@@ -124,9 +124,61 @@ const loginDean = asyncHandler(async (req, res) => {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
   }
-}); 
- 
+});  */
 
+const getPendingDeanSessions = asyncHandler(async (req, res) => {
+  const { university_id } = req.body;
+
+  try {
+    const pendingSessions = await DeanSession.find({
+      status: "booked",
+    });
+
+    const currentTime = new Date(); // Get the current time
+
+    const sessionDetails = await Promise.all(
+      pendingSessions.map(async (session) => {
+        const student = await Student.findOne({
+          university_id: session.booked_by,
+        });
+
+        if (!student) {
+          return {
+            student_name: "Student Not Found",
+            session_slot: session.slot,
+            session_day: session.day,
+          };
+        } 
+
+        // Check if the session has an end_time and if it's in the future
+        if (session.end_time && new Date(session.end_time) > currentTime) {
+          return {
+            student_name: student.student_name,
+            session_slot: session.slot,
+            session_day: session.day,
+          };
+        } 
+
+        // Session is in the past or has an invalid/unset end_time
+        return null;
+      })
+    );
+
+    // Filter out null values (slots in the past or with unset end_time)
+    const validSessionDetails = sessionDetails.filter(
+      (session) => session !== null
+    );
+
+    if (validSessionDetails.length === 0) {
+      return res.status(200).json({ message: "No pending sessions found" });
+    }
+
+    res.status(200).json({ "booked-sessions": validSessionDetails });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
 
 module.exports = {
   registerDean,

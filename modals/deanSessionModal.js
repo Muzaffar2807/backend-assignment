@@ -4,18 +4,18 @@ const mongoose = require("mongoose");
 const DeanSessionSchema = mongoose.Schema({
   slot: {
     type: Number,
-     required: true,
-    enum: [1, 2], 
+    required: true,
+    enum: [1, 2],
   },
   day: {
     type: String,
     required: true,
-    enum: ["THURSDAY", "FRIDAY"],  
+    enum: ["THURSDAY", "FRIDAY"],
   },
   status: {
     type: String,
     required: true,
-    enum: ["available", "booked"], 
+    enum: ["available", "booked"],
   },
   booked_by: {
     type: String,
@@ -30,6 +30,7 @@ const DeanSessionSchema = mongoose.Schema({
     type: Date,
     required: false,
   },
+   
 });
  
 DeanSessionSchema.pre("save", function (next) {
