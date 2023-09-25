@@ -1,45 +1,47 @@
 const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const Student = require("../modals/studentModel");
-const DeanSession = require("../modals/deanSessionModal");
+const Student = require("../models/studentModel");
+const DeanSession = require("../models/deanSessionModel");
+const User = require("../models/usersModel");
+const dotenv = require("dotenv").config();
+
 
 const registerStudent = asyncHandler(async (req, res) => {
   try {
-    const { university_id, student_name, password } = req.body;
+    const { university_id, user_name, password, role } = req.body;
 
-    if (!university_id || !student_name || !password) {
-      res.status(400);
-      throw new Error("All fields are mandatory");
+    if (!university_id || !user_name || !password || !role) {
+      res.status(400).json({ message: "All fields are mandatory" });
+      return;
     }
 
-    const userAvailable = await Student.findOne({ university_id });
+    const userAvailable = await User.findOne({ university_id });
 
     if (userAvailable) {
-      res.status(400);
-      throw new Error("Student already registered");
+      res.status(400).json({ message: `${role} already registered` });
+      return;
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await Student.create({
-      student_name,
+    const user = await User.create({
+      user_name,
       university_id,
       password: hashedPassword,
+      role,
     });
-
-    console.log(user);
 
     if (user) {
       res.status(201).json({
         _id: user.id,
-        student_name: user.student_name,
+        user_name: user.user_name,
         university_id: user.university_id,
+        role: user.role,
       });
     } else {
-      res.status(400);
-      throw new Error("User data is not valid");
+      res.status(400).json({ message: `${role} data is not valid` });
     }
   } catch (error) {
     console.error(error);
@@ -52,11 +54,11 @@ const loginStudent = asyncHandler(async (req, res) => {
     const { university_id, password } = req.body;
 
     if (!university_id || !password) {
-      res.status(400);
-      throw new Error("All fields Mandatory");
+      res.status(400).json({ message: "All fields mandatory" });
+      throw new Error("All fields mandatory");
     }
 
-    const user = await Student.findOne({ university_id });
+    const user = await User.findOne({ university_id });
 
     if (!user) {
       res.status(401);
@@ -66,7 +68,7 @@ const loginStudent = asyncHandler(async (req, res) => {
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (!passwordMatch) {
-      res.status(401);
+      res.status(401).json({ message: "ID or Password Invalid" });
       throw new Error("ID or Password Invalid");
     }
 
@@ -74,7 +76,7 @@ const loginStudent = asyncHandler(async (req, res) => {
       {
         user: {
           university_id: user.university_id,
-          email: user.email,
+          //email: user.email,
           id: user.id,
         },
       },
@@ -88,7 +90,7 @@ const loginStudent = asyncHandler(async (req, res) => {
     // Set the authorization header with the bearer token
     res.setHeader("Authorization", `Bearer ${accessToken}`);
 
-    res.status(200).json({ message: "successfully logged In!", student: user });
+    res.status(200).json({ message: "successfully logged In!", user });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
