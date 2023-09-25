@@ -1,7 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken"); 
-const Student = require("../models/studentModel");
+const jwt = require("jsonwebtoken");  
 const DeanSession = require("../models/deanSessionModel");
 
 const User = require("../models/usersModel");
