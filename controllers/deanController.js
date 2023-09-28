@@ -96,120 +96,54 @@ const loginUser = asyncHandler(async (req, res) => {
 
 
 
-/* const getPendingDeanSessions = asyncHandler(async (req, res) => {
-  const { university_id } = req.body;
+  const getPendingSessions = asyncHandler(async (req, res) => {
+    const { university_id } = req.body;
 
-  try {
-    const pendingSessions = await DeanSession.find({
-      status: "booked",
-    });
-
-    const currentTime = new Date();
-
-    const sessionDetails = await Promise.all(
-      pendingSessions.map(async (session) => {
-        const student = await Student.findOne({
-          university_id: session.booked_by,
-        });
-
-        if (!student) {
-          return {
-            student_name: "Student Not Found",
-            session_slot: session.slot,
-            session_day: session.day,
-          };
-        }
-        if (session.end_time && new Date(session.end_time) > currentTime) {
-          return {
-            student_name: student.student_name,
-            session_slot: session.slot,
-            session_day: session.day,
-          };
-        }
-        return null;
-      })
-    );
-    const validSessionDetails = sessionDetails.filter(
-      (session) => session !== null
-    );
-
-    if (validSessionDetails.length === 0) {
-      return res.status(200).json({ message: "No pending sessions found" });
-    }
-
-    res.status(200).json({ "booked-sessions": validSessionDetails });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-}); */
-
-const getPendingSessions = asyncHandler(async (req, res) => {
-  const { university_id } = req.body;
-
-  try { 
-    const user = await User.findOne({ university_id });
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const currentTime = new Date();
-
-    if (user.role === "student") {
-      // For students, find their booked sessions
+    try {
       const pendingSessions = await DeanSession.find({
         status: "booked",
-        booked_by: university_id,  
       });
 
-      const validSessionDetails = pendingSessions
-        .filter(
-          (session) =>
-            session.end_time && new Date(session.end_time) > currentTime
-        )
-        .map((session) => ({
-          student_name: user.user_name,
-          session_slot: session.slot,
-          session_day: session.day,
-        }));
+      const currentTime = new Date();
+
+      const sessionDetails = await Promise.all(
+        pendingSessions.map(async (session) => {
+          const student = await User.findOne({
+            university_id
+          }) 
+
+          if (!student) {
+            return {
+              student_name: session.booked_by,
+              session_slot: session.slot,
+              session_day: session.day,
+            };
+          }
+          if (session.end_time && new Date(session.end_time) > currentTime) {
+            return {
+              student_name: student.student_name,
+              session_slot: session.slot,
+              session_day: session.day,
+            };
+          }
+          return null;
+        })
+      );
+      const validSessionDetails = sessionDetails.filter(
+        (session) => session !== null
+      );
 
       if (validSessionDetails.length === 0) {
         return res.status(200).json({ message: "No pending sessions found" });
       }
 
       res.status(200).json({ "booked-sessions": validSessionDetails });
-    } else if (user.role === "dean") {
-      // For deans, find sessions they have booked
-      const pendingSessions = await DeanSession.find({
-        status: "booked",
-        booked_by: university_id,
-      });
-
-      const validSessionDetails = pendingSessions
-        .filter(
-          (session) =>
-            session.end_time && new Date(session.end_time) > currentTime
-        )
-        .map((session) => ({
-       //   student_name: sess.student_name,  
-          session_slot: session.slot,
-          session_day: session.day,
-        }));
-
-      if (validSessionDetails.length === 0) {
-        return res.status(200).json({ message: "No pending sessions found" });
-      }
-
-      res.status(200).json({ "booked-sessions": validSessionDetails });
-    } else {
-      return res.status(401).json({ message: "Invalid user role" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal Server Error" });
     }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-});
+  }); 
+ 
 
 
 module.exports = {

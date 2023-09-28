@@ -128,8 +128,14 @@ const bookDeanSession = asyncHandler(async (req, res) => {
       res.status(400).json({ message: "Session is not available for booking" });
       return;
     }
+
+    const student = await User.findOne({university_id});
+    if(!student){
+      res.status(404).json({ message: "Student not found"})
+    }
+
     session.status = "booked";
-    session.booked_by = university_id;
+    session.booked_by = student.user_name;
 
     await session.save();
 

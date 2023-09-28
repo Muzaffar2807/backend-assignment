@@ -38,4 +38,12 @@ DeanSessionSchema.pre("save", function (next) {
   next();
 });
 
+DeanSessionSchema.pre("findOneAndUpdate", async function () {
+  const session = this;  
+
+  if (session.getUpdate().$set.end_time < new Date()) { 
+    session.updateOne({ status: "available" });  
+  }
+});
+
 module.exports = mongoose.model("DeanSession", DeanSessionSchema);
